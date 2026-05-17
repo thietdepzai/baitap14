@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading List CRUD</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f9f9f9; }
+        .header-title { text-align: center; font-size: 40px; color: #4a4a4a; margin-top: 40px; font-weight: bold; }
+        .book-container { display: flex; flex-wrap: wrap; gap: 20px; max-width: 900px; margin: 30px auto; padding: 20px; }
+        
+        /* Style cho từng thẻ sách */
+        .book-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; width: calc(33.333% - 20px); overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
+        .book-card img { width: 100%; height: 180px; object-fit: cover; }
+        .book-title { padding: 15px; font-size: 18px; color: #555; }
+        
+        /* Nút xóa trên góc ảnh */
+        .delete-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.2); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .delete-btn:hover { background: rgba(255,0,0,0.7); }
+
+        /* Form thêm sách ở dưới cùng */
+        .add-book-section { background-color: #1abc9c; padding: 30px; margin-top: 50px; }
+        .add-form { max-width: 900px; margin: 0 auto; }
+        .add-form h2 { color: white; margin-top: 0; }
+        .add-form label { color: white; display: block; margin-bottom: 5px; }
+        .add-form input { width: 100%; padding: 10px; border: none; border-radius: 4px; margin-bottom: 15px; box-sizing: border-box; }
+        .add-form button { background: white; color: #555; border: none; padding: 10px 20px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .add-form button:hover { background: #eee; }
+    </style>
+</head>
+<body>
+
+    <h1 class="header-title">Reading List</h1>
+    <div class="book-container" id="bookList">
+        </div>
+
+    <div class="add-book-section">
+        <div class="add-form">
+            <h2>Add a Book</h2>
+            <form id="addBookForm">
+                <label for="bookTitle">Title</label>
+                <input type="text" id="bookTitle" required>
+                <button type="submit">Create!</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/books';
+        const bookList = document.getElementById('bookList');
+        const addBookForm = document.getElementById('addBookForm');
+
+        // Lấy danh sách sách (READ)
+        async function fetchBooks() {
+            try {
+                const response = await fetch(API_URL);
+                const books = await response.json();
+                renderBooks(books);
+            } catch (error) {
+                console.error('Lỗi khi lấy dữ liệu:', error);
+            }
+        }
+
+        // Hiển thị sách ra HTML
+        function renderBooks(books) {
+            bookList.innerHTML = ''; // Xóa dữ liệu cũ
+            books.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'book-card';
+                card.innerHTML = `
+                    <button class="delete-btn" onclick="deleteBook('${book.id}')">×</button>
+                    <img src="${book.image}" alt="${book.title}">
+                    <div class="book-title">${book.title}</div>
+                `;
+                bookList.appendChild(card);
+            });
+        }
+
+        // Thêm sách mới (CREATE)
+        addBookForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Chặn việc load lại trang
+            const titleInput = document.getElementById('bookTitle').value;
+            
+            // Random một ảnh Unsplash làm ảnh bìa
+            // Dùng dịch vụ Picsum để lấy ảnh ngẫu nhiên với kích thước 400x300
+const randomImage = `https://picsum.photos/400/300?random=${Math.random()}`;
+
+            const newBook = { title: titleInput, image: randomImage };
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newBook)
+                });
+                document.getElementById('bookTitle').value = ''; // Xóa trắng ô input
+                fetchBooks(); // Tải lại danh sách
+            } catch (error) {
+                console.error('Lỗi khi thêm sách:', error);
+            }
+        });
+
+        // Xóa sách (DELETE)
+        async function deleteBook(id) {
+            if(confirm("Bạn có chắc muốn xóa quyển sách này?")) {
+                try {
+                    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                    fetchBooks(); // Tải lại danh sách sau khi xóa
+                } catch (error) {
+                    console.error('Lỗi khi xóa:', error);
+                }
+            }
+        }
+
+        // Chạy hàm lấy dữ liệu ngay khi tải trang
+        fetchBooks();
+    </script>
+</body>
+</html>
